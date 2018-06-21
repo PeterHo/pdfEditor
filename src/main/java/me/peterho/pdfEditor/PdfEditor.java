@@ -15,6 +15,7 @@ import java.io.PrintWriter;
 
 /**
  * https://developers.itextpdf.com/examples
+ * http://blog.51cto.com/walkerqt/1408792
  */
 
 public class PdfEditor {
@@ -32,7 +33,7 @@ public class PdfEditor {
                     PdfStream stream = contentArray.getAsStream(j);
                     String content = new String(stream.getBytes());
                     if (content.contains(text)) {
-                        System.out.println(content);
+                        // System.out.println(content);
                         stream.put(PdfName.Length, new PdfNumber(0));
                         stream.setData(new byte[0]);
                     }
@@ -112,10 +113,6 @@ public class PdfEditor {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(args.length);
-        System.out.println(args[0]);
-        System.out.println(args[1]);
-        System.out.println(args[2]);
         if (args.length != 3) {
             System.out.println("pdfEditor -j srcPdf desPdf");
             System.out.println("pdfEditor -d=\"some text\" srcPdf desPdf");
@@ -127,17 +124,23 @@ public class PdfEditor {
         String srcFile = args[1];
         String descFile = args[2];
 
+        System.out.println("param: " + param);
+        System.out.println("srcFile: " + srcFile);
+        System.out.println("descFile: " + descFile);
+
         File file = new File(descFile);
         file.getParentFile().mkdirs();
         if (param.equals("-j")) {
             new PdfEditor().removeWatermarkOfJisuPDF(srcFile, descFile);
         } else if (param.startsWith("-d=")) {
             String text = param.substring(3);
-            System.out.println(text);
+            System.out.println("remove " + text + " ...");
             new PdfEditor().removeSpecifiedTextInPDF(srcFile, descFile, text);
 
         } else {
             System.out.println("unknown param");
         }
+
+        System.out.println("OK");
     }
 }
