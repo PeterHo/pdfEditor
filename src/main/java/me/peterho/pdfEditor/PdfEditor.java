@@ -1,14 +1,6 @@
 package me.peterho.pdfEditor;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfStream;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy;
+import com.itextpdf.kernel.pdf.*;
 
 // import com.itextpdf.text.pdf.parser.PdfReaderContentParser;
 // import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy;
@@ -28,50 +20,60 @@ import java.io.PrintWriter;
 public class PdfEditor {
 
     private void removeSpecifiedTextInPDF(String src, String dest, String text) throws IOException {
-        // PdfReader reader = new PdfReader(src);
-        // PdfReaderContentParser parser = new PdfReaderContentParser(reader);
-        // TextExtractionStrategy strategy;
-        // for (int i=1; i<=reader.getNumberOfPages(); i++) {
-        // for (int i=1; i<=2; i++) {
-        //
-        //     // SimpleTextExtractionStrategy();
-        //     // strategy = parser.processContent(i, new SimpleTextExtractionStrategy());
-        //     // System.out.println(strategy.getResultantText());
-        // }
-        // reader.close();
-
-
-
         PdfDocument pdfDoc = new PdfDocument(new PdfReader(src), new PdfWriter(dest));
 
         for (int i = 0; i < pdfDoc.getNumberOfPages(); i++) {
-        // for (int i = 1; i < 2; i++) {
             PdfPage page = pdfDoc.getPage(i + 1);
+
             PdfDictionary dict = page.getPdfObject();
-            PdfObject object = dict.get(PdfName.Link);
-            if (object instanceof PdfStream) {
-                PdfStream stream = (PdfStream) object;
-                System.out.println("~~~~~~~~~~~~~~~~ " + stream.getCompressionLevel());
-                byte[] data = stream.getBytes();
-                for (int j = 0; j < data.length - 8; j++) {
-                    if (data[j] == 'X' &&
-                            data[j + 1] == 'O' &&
-                            data[j + 2] == 'b' &&
-                            data[j + 3] == 'j' &&
-                            data[j + 4] == 'e' &&
-                            data[j + 5] == 'c' &&
-                            data[j + 6] == 't') {
-                        System.out.println("~~~~~~~~~~~~~~~" + j);
-                        break;
+            PdfArray contentArray = dict.getAsArray(PdfName.Contents);
+            if (contentArray != null) {
+                for (int j = 0; j < contentArray.size(); j++) {
+                    PdfStream stream = contentArray.getAsStream(j);
+                    String content = new String(stream.getBytes());
+                    if (content.contains(text)) {
+                        System.out.println(content);
+                        stream.put(PdfName.Length, new PdfNumber(0));
+                        stream.setData(new byte[0]);
                     }
                 }
-                System.out.println(new String(data, "UTF-8"));
             }
         }
 
         pdfDoc.close();
     }
 
+    private void removeSpecifiedXObjectInPDF(String src, String dest, String text) throws IOException {
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(src), new PdfWriter(dest));
+
+        for (int i = 0; i < pdfDoc.getNumberOfPages(); i++) {
+            PdfPage page = pdfDoc.getPage(i + 1);
+
+            PdfDictionary dict = page.getPdfObject();
+            PdfDictionary objects = dict.getAsDictionary(PdfName.XObject);
+            if (objects != null) {
+                for (PdfName name : objects.keySet()) {
+                    PdfObject obj = objects.get(name);
+                    if(obj.isIndirect()) {
+                        System.out.println(name);
+                    }
+                }
+
+                // for (int j = 0; j < contentArray.size(); j++) {
+                //     PdfStream stream = contentArray.getAsStream(j);
+                //     String content = new String(stream.getBytes());
+                //     if (content.contains(text)) {
+                //         System.out.println(content);
+                //         stream.put(PdfName.Length, new PdfNumber(0));
+                //         stream.setData(new byte[0]);
+                //     }
+                // }
+            }
+        }
+
+        pdfDoc.close();
+
+    }
 
     private void removeWatermarkOfJisuPDF(String src, String dest) throws Exception {
 
